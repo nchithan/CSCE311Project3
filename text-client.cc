@@ -10,8 +10,10 @@
 
 #include <string>
 #include <iostream>
-
+#include <vector>
 #include "shared.h"
+
+std::vector<std::string> storage;
 
 const char kSocket_path[] = "";
 int main(int argc, char *argv[]) {
@@ -19,17 +21,53 @@ int main(int argc, char *argv[]) {
     return 1;
   int filePathSize = std::string(argv[2]).size();
   int keywordSize = std::string(argv[3]).size();
+
+  char *shmpath = "/myshm";
+  // Creating Shared mem and setting its size
+  int fd = shm_open(shmpath, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
   
-  
+  if(fd == -1){
+    errExit("shm_open");
+  }
+  if(ftruncate(fd, sizeof(struct shmbuf)) == -1){
+    errExit("ftruncate");
+  }
+
+  /* Map the object into the caller's address space. */
+  struct shmbuf *shmp = (shmbuf*) mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+
+  if (shmp == MAP_FAILED){
+    errExit("mmap");
+  }
+  //Initialize semaphores
+
+  if(sem_init(&shmp->sem1, 1,0 ) == -1){
+    errExit("sem_init-sem1");
+  }
+  if(sem_init(&shmp->sem2, 1, 0) == -1){
+    errExit("sem_init-sem2");
+  }
+  //Waiting for sem1
+  if (sem_wait(&shmp->sem1) == -1){
+    errExit("sem_wait");
+  }
+  //Send the filePath and keyword to server
+
+  //Do Stuff
 
 
+  /* Post 'sem2' to tell the peer that it can now access the modified data in shared memory. */
+
+  if (sem_post(&shmp->sem2) == -1){
+    errExit("sem_post");
+  }
+
+  /* Unlink the shared memory object. Even if the peer process
+  is still using the object, this is okay. The object will
+  be removed only after all open references are closed. */
+
+  shm_unlink(shmpath);
+
+  //exit(EXIT_SUCCESS);
   return 0;
 }
-
-
-// int i = 1;
-// std::string lines;
-// while(getline(filename, lines)){
-//   std::cout << i << "\t" << lines << std::endl;
-//   i++;
-// }

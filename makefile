@@ -12,7 +12,7 @@ compile = $(cc) $(flags) -c
 
 # text-server.cc
 #
-text-server: text-server.cc
+text-server: text-server.cc shared.h
 	$(link) $@ $^
 
 text-client: text-client.cc

@@ -16,10 +16,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/sysinfo.h>
+#include <chrono>
+#include <thread>
 
 #include "shared.h"
 
-char *shmpath = "myshm";
+char *shmpath = "/myshm";
 
 std::vector<std::string> tp;
 
@@ -29,22 +31,36 @@ int main(int argc, char *argv[]) {
   }
   std::cout << "SERVER START" << std::endl; //Server is starting
   
-  //Receiving filename and path from client through socket
-
-  std::string filepath;
-  std::string searchString;
-  int len = 0;
+  sleep(5000);
   
-
-  std::clog << "CLIENT REQUEST RECIEVED" << std::endl;
 
   //Open Shared Memory
   int fd = shm_open(shmpath, O_RDWR, 0);
+  struct shmbuf *shmp = (shmbuf*) mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (fd == -1){
     errExit("shm_open");
   }
-  struct shmbuf *shmp = (shmbuf*) mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  
   std::clog << "\tMEMORY OPEN" << std::endl;
+
+  //Receiving filename and path from client through shared mem
+
+  //Waiting for sem1
+    if (sem_wait(&shmp->sem1) == -1){
+      errExit("sem_wait");
+    }
+
+  std::string filepath((const char *) &shmp->buf);
+  //std::string searchString;
+  int len = 0;
+  
+  std::cout << "CLIENT REQUEST RECIEVED: " << filepath << std::endl;
+  std::clog << "CLIENT REQUEST RECIEVED" << std::endl;
+
+
+
+
+  
 
 
 
@@ -71,7 +87,14 @@ int main(int argc, char *argv[]) {
         }
       //}
     }
-
+    //Adding a way to let client know when its over
+    char *quit = "END";
+    len = strlen(quit);
+    shmp->cnt = len;
+    memcpy(&shmp->buf, quit, len);
+    /* Tell peer that it can now access shared memory. */
+    if (sem_post(&shmp->sem1) == -1)
+      errExit("sem_post");
 
     std::clog << "\tFILE CLOSED" << std::endl;
   } else {
@@ -80,7 +103,7 @@ int main(int argc, char *argv[]) {
     shmp->cnt = len;
     memcpy(&shmp->buf, NOTVALID, len);
   }
-  
+    
   shm_unlink(shmpath);
   std::clog << "\tMEMORY CLOSE" << std::endl;
 

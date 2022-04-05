@@ -11,17 +11,39 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include<thread>
+#include <thread>
 #include "shared.h"
 
 std::vector<std::string> storage;
+std::vector<std::string> storage2;
+int whereItStops;
+std::string INVAL = "INVALID FILE";
+
+void SearchFunction(std::string searchString, int threadNum, int whereItStop){
+  int size = storage.size();
+  int i = whereItStop;
+  for(; i < ((size/4)*threadNum); i++){
+    if(storage.at(i).find(searchString) != std::string::npos){
+      storage2.push_back(storage.at(i));
+    }
+    if(storage.at(i) == INVAL){
+      storage2.push_back(storage.at(i));
+    }
+  }
+
+  whereItStops = threadNum;
+}
+
 
 const char kSocket_path[] = "";
 int main(int argc, char *argv[]) {
   if (argc != 4)
     return 1;
-  int filePathSize = std::string(argv[2]).size();
-  int keywordSize = std::string(argv[3]).size();
+  
+  int len =0;
+
+  std::string searchString = argv[3];
+  std::string filePath = argv[2];  
 
   char *shmpath = "/myshm";
   // Creating Shared mem and setting its size
@@ -48,34 +70,54 @@ int main(int argc, char *argv[]) {
   if(sem_init(&shmp->sem2, 1, 0) == -1){
     errExit("sem_init-sem2");
   }
-
-
-  //Recieving the data
   
-
-
-
-  //Waiting for sem1
-  if (sem_wait(&shmp->sem1) == -1){
-    errExit("sem_wait");
-  }
-  //Send the filePath and keyword to server
-
-  //Do Stuff
-
-
-  /* Post 'sem2' to tell the peer that it can now access the modified data in shared memory. */
-
-  if (sem_post(&shmp->sem2) == -1){
+  //Sending filePath to server
+  char *charline = &filePath[0];
+  len = strlen(charline);
+  shmp->cnt = len;
+  memcpy(&shmp->buf, charline, len);
+  /* Tell peer that it can now access shared memory. */
+  if (sem_post(&shmp->sem1) == -1)
     errExit("sem_post");
+
+
+  std::string quit("END");
+  while(true){
+    //Waiting for sem1
+    if (sem_wait(&shmp->sem1) == -1){
+      errExit("sem_wait");
+    }
+    std::string line((const char *) &shmp->buf);
+    if(line == quit){
+      break;
+    }
+    storage.push_back(line);
+    if (sem_post(&shmp->sem2) == -1){
+      errExit("sem_post");
+    }
   }
+
+  //Searching
+  std::thread th1(SearchFunction, searchString);
+  th1.join();
+
+  std::thread th2(SearchFunction, searchString);
+  th2.join();
+
+  std::thread th3(SearchFunction, searchString);
+  th3.join();
+
+  std::thread th4(SearchFunction, searchString);
+  th4.join();
+
 
   //Printing the results of the threads
-  for(int i = 0; i < storage.size(); i++){
-    if(storage.at(i) == "INVALID FILE"){
+  for(int i = 0; i < storage2.size(); i++){
+    if(storage2.at(i) == "INVALID FILE"){
       std::cerr << "INVALID FILE" << std::endl;
+      break;
     }
-    std::cout << (i+1) << "\t " << storage.at(i) << std::endl; 
+    std::cout << (i+1) << "\t " << storage2.at(i) << std::endl; 
   }
 
   /* Unlink the shared memory object. Even if the peer process

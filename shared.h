@@ -14,6 +14,7 @@
 struct shmbuf {
     sem_t sem1;
     sem_t sem2;
+    sem_t sem3;
     size_t cnt;
     char buf[BUF_SIZE];
 };

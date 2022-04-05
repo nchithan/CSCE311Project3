@@ -11,6 +11,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include<thread>
 #include "shared.h"
 
 std::vector<std::string> storage;
@@ -47,6 +48,13 @@ int main(int argc, char *argv[]) {
   if(sem_init(&shmp->sem2, 1, 0) == -1){
     errExit("sem_init-sem2");
   }
+
+
+  //Recieving the data
+  
+
+
+
   //Waiting for sem1
   if (sem_wait(&shmp->sem1) == -1){
     errExit("sem_wait");
@@ -62,12 +70,19 @@ int main(int argc, char *argv[]) {
     errExit("sem_post");
   }
 
+  //Printing the results of the threads
+  for(int i = 0; i < storage.size(); i++){
+    if(storage.at(i) == "INVALID FILE"){
+      std::cerr << "INVALID FILE" << std::endl;
+    }
+    std::cout << (i+1) << "\t " << storage.at(i) << std::endl; 
+  }
+
   /* Unlink the shared memory object. Even if the peer process
   is still using the object, this is okay. The object will
   be removed only after all open references are closed. */
 
   shm_unlink(shmpath);
 
-  //exit(EXIT_SUCCESS);
-  return 0;
+  return 0;  //terminates code and returns 0
 }

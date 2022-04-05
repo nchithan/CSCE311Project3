@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
   if(file.is_open()){
     std::string line;
     while (std::getline(file,line)){
-      if(line.find(searchString) != std::string::npos){
+      //if(line.find(searchString) != std::string::npos){
         char *charline = &line[0];
         len = strlen(charline);
         shmp->cnt = len;
@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
         if (sem_wait(&shmp->sem2) == -1){
           errExit("sem_wait");
         }
-      }
+      //}
     }
 
 

@@ -74,16 +74,17 @@ int main(int argc, char *argv[]) {
   if(sem_init(&shmp->sem2, 1, 0) == -1){
     errExit("sem_init-sem2");
   }
-  
+  sleep(10);
   //Sending filePath to server
   char *charline = &filePath[0];
   len = strlen(charline);
   shmp->cnt = len;
   memcpy(&shmp->buf, charline, len);
+  sleep(10);
   /* Tell peer that it can now access shared memory. */
   if (sem_post(&shmp->sem1) == -1)
     errExit("sem_post");
-
+  sleep(10);
 
   std::string quit("END");
   while(true){
@@ -91,14 +92,17 @@ int main(int argc, char *argv[]) {
     if (sem_wait(&shmp->sem1) == -1){
       errExit("sem_wait");
     }
+    sleep(10);
     std::string line((const char *) &shmp->buf);
     if(line == quit){
       break;
     }
     storage.push_back(line);
+    sleep(10);
     if (sem_post(&shmp->sem2) == -1){
       errExit("sem_post");
     }
+    sleep(10);
   }
 
   //Searching

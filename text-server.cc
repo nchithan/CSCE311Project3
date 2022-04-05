@@ -46,6 +46,7 @@ int main(int argc, char *argv[]) {
 
   //Open Shared Memory
   int fd = shm_open(shmpath, O_RDWR, 0);
+  sleep(10);
   struct shmbuf *shmp = (shmbuf*) mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
   if (fd == -1){
     errExit("shm_open");
@@ -54,11 +55,12 @@ int main(int argc, char *argv[]) {
   std::clog << "\tMEMORY OPEN" << std::endl;
 
   //Receiving filename and path from client through shared mem
-
+  sleep(10);
   //Waiting for sem1
     if (sem_wait(&shmp->sem1) == -1){
       errExit("sem_wait");
     }
+    sleep(10);
 
   std::string filepath((const char *) &shmp->buf);
   //std::string searchString;
@@ -73,7 +75,7 @@ int main(int argc, char *argv[]) {
   
 
 
-
+  sleep(10);
   /* Copy data into the shared memory object. */
   std::ifstream file;
   //Opening file
@@ -87,32 +89,39 @@ int main(int argc, char *argv[]) {
         len = strlen(charline);
         shmp->cnt = len;
         memcpy(&shmp->buf, charline, len);
+        sleep(10);
         /* Tell peer that it can now access shared memory. */
         if (sem_post(&shmp->sem1) == -1)
           errExit("sem_post");
+          sleep(10);
         /* Wait until peer says that it has finished accessing
         the shared memory. */
         if (sem_wait(&shmp->sem2) == -1){
           errExit("sem_wait");
         }
+        sleep(10);
       //}
     }
     //Adding a way to let client know when its over
+    sleep(10);
     std::string quit1 = "END";
     char *quit = &quit1[0];
     len = strlen(quit);
     shmp->cnt = len;
     memcpy(&shmp->buf, quit, len);
+    sleep(10);
     /* Tell peer that it can now access shared memory. */
     if (sem_post(&shmp->sem1) == -1)
       errExit("sem_post");
-
+    sleep(10);
     std::clog << "\tFILE CLOSED" << std::endl;
   } else {
+    sleep(10);
     const char *NOTVALID = "INVALID FILE";
     len = strlen(NOTVALID);
     shmp->cnt = len;
     memcpy(&shmp->buf, NOTVALID, len);
+    sleep(10);
   }
     
   shm_unlink(shmpath);

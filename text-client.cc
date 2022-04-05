@@ -52,6 +52,7 @@ int main(int argc, char *argv[]) {
   // Creating Shared mem and setting its size
   int fd = shm_open(shmpath, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
   
+  sleep(10);
   if(fd == -1){
     errExit("shm_open");
   }

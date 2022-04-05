@@ -12,11 +12,14 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <sys/mman.h>
+#include <sys/stat.h>        /* For mode constants */
+#include <fcntl.h>
 #include "shared.h"
 
 std::vector<std::string> storage;
 std::vector<std::string> storage2;
-int whereItStops;
+int whereItStops = 0;
 std::string INVAL = "INVALID FILE";
 
 void SearchFunction(std::string searchString, int threadNum, int whereItStop){
@@ -44,8 +47,8 @@ int main(int argc, char *argv[]) {
 
   std::string searchString = argv[3];
   std::string filePath = argv[2];  
-
-  char *shmpath = "/myshm";
+  std::string shmpath1 = "/myshm";
+  char *shmpath = &shmpath1[0];
   // Creating Shared mem and setting its size
   int fd = shm_open(shmpath, O_CREAT | O_EXCL | O_RDWR, S_IRUSR | S_IWUSR);
   
@@ -98,21 +101,23 @@ int main(int argc, char *argv[]) {
   }
 
   //Searching
-  std::thread th1(SearchFunction, searchString);
+  int threadNum = 1;
+  std::thread th1(SearchFunction, searchString, threadNum, whereItStops);
+  threadNum++;
+  std::thread th2(SearchFunction, searchString, threadNum, whereItStops);
+  threadNum++;
+  std::thread th3(SearchFunction, searchString, threadNum, whereItStops);
+  threadNum++;
+  std::thread th4(SearchFunction, searchString, threadNum, whereItStops);
+
   th1.join();
-
-  std::thread th2(SearchFunction, searchString);
   th2.join();
-
-  std::thread th3(SearchFunction, searchString);
   th3.join();
-
-  std::thread th4(SearchFunction, searchString);
   th4.join();
 
 
   //Printing the results of the threads
-  for(int i = 0; i < storage2.size(); i++){
+  for(int i = 0; i < (int)storage2.size(); i++){
     if(storage2.at(i) == "INVALID FILE"){
       std::cerr << "INVALID FILE" << std::endl;
       break;

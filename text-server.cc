@@ -13,15 +13,25 @@
 #include <fstream>
 #include <vector>
 
-#include <stdlib.h>
-#include <stdio.h>
+
+
 #include <sys/sysinfo.h>
 #include <chrono>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
+#include <semaphore.h>
+#include <sys/mman.h>
 #include <thread>
 
 #include "shared.h"
 
-char *shmpath = "/myshm";
+std::string shmpath1 = "/myshm";
+  char *shmpath = &shmpath1[0];
 
 std::vector<std::string> tp;
 
@@ -88,7 +98,8 @@ int main(int argc, char *argv[]) {
       //}
     }
     //Adding a way to let client know when its over
-    char *quit = "END";
+    std::string quit1 = "END";
+    char *quit = &quit1[0];
     len = strlen(quit);
     shmp->cnt = len;
     memcpy(&shmp->buf, quit, len);
